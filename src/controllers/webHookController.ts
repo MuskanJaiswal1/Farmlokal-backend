@@ -8,13 +8,22 @@ export async function handleWebhook(req: Request, res: Response) {
     return res.status(400).json({ message: "Missing eventId" });
   }
 
-  const exists = await redis.get(`webhook:${eventId}`);
-
-  if (exists) {
-    return res.json({ message: "Duplicate event ignored" });
+  // Check for duplicate events if Redis is available
+  try {
+    const exists = await redis.get(`webhook:${eventId}`);
+    if (exists) {
+      return res.json({ message: "Duplicate event ignored" });
+    }
+  } catch (err) {
+    console.warn("Redis check failed in webhook, proceeding without deduplication:", err);
   }
 
-  await redis.set(`webhook:${eventId}`, "processed", "EX", 3600);
+  // Store event ID to prevent duplicates
+  try {
+    await redis.set(`webhook:${eventId}`, "processed", "EX", 3600);
+  } catch (err) {
+    console.warn("Redis set failed in webhook, duplicate detection unavailable:", err);
+  }
 
   console.log("Processing webhook event:", eventId);
 

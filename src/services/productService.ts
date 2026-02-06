@@ -4,10 +4,14 @@ import { getProducts } from "../repositories/productRepository";
 export async function getProductsService(query: any) {
   const cacheKey = `products:${JSON.stringify(query)}`;
 
-  const cached = await redis.get(cacheKey);
-
-  if (cached) {
-    return JSON.parse(cached);
+  // Try to get from cache, but don't fail if Redis is unavailable
+  try {
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+      return JSON.parse(cached);
+    }
+  } catch (err) {
+    console.warn("Redis get failed, fetching from database:", err);
   }
 
   const products = await getProducts(query);
@@ -19,7 +23,12 @@ export async function getProductsService(query: any) {
     nextCursor: lastItem ? lastItem.id : null
   };
 
-  await redis.set(cacheKey, JSON.stringify(response), "EX", 60);
+  // Try to cache, but don't fail if Redis is unavailable
+  try {
+    await redis.set(cacheKey, JSON.stringify(response), "EX", 60);
+  } catch (err) {
+    console.warn("Redis set failed, continuing without cache:", err);
+  }
 
   return response;
 }

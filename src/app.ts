@@ -25,17 +25,29 @@ app.get("/", (req, res) => {
 app.get("/health", async (req, res) => {
   try {
     await pool.query("SELECT 1");
-    await redis.ping();
+    
+    // Try Redis but don't fail if it's not available
+    let redisStatus = "disconnected";
+    try {
+      await redis.ping();
+      redisStatus = "connected";
+    } catch (redisErr) {
+      console.warn("Redis health check failed:", redisErr);
+    }
 
-    res.send("MySQL + Redis connected ✅");
+    res.send(`MySQL connected ✅ | Redis: ${redisStatus}`);
   } catch (err) {
     res.status(500).send("Connection failed ❌");
   }
 });
 
 app.get("/metrics", async (req, res) => {
-  const redisInfo = await redis.info();
-  res.send(redisInfo);
+  try {
+    const redisInfo = await redis.info();
+    res.send(redisInfo);
+  } catch (err) {
+    res.status(503).send("Redis metrics unavailable");
+  }
 });
 
 
