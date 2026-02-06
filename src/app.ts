@@ -52,6 +52,38 @@ app.get("/metrics", async (req, res) => {
   }
 });
 
+app.get("/db-check", async (req, res) => {
+  try {
+    const connection = await pool.getConnection();
+    const [rows]: any = await connection.query("SELECT DATABASE() as db, VERSION() as version");
+    connection.release();
+    
+    res.json({
+      status: "connected",
+      database: rows[0].db,
+      version: rows[0].version,
+      config: {
+        host: process.env.MYSQL_HOST || process.env.MYSQLHOST,
+        port: process.env.MYSQL_PORT || process.env.MYSQLPORT || 3306,
+        user: process.env.MYSQL_USER || process.env.MYSQLUSER,
+        database: process.env.MYSQL_DB || process.env.MYSQLDATABASE
+      }
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      status: "failed",
+      error: err.message,
+      code: err.code,
+      config: {
+        host: process.env.MYSQL_HOST || process.env.MYSQLHOST,
+        port: process.env.MYSQL_PORT || process.env.MYSQLPORT || 3306,
+        user: process.env.MYSQL_USER || process.env.MYSQLUSER,
+        database: process.env.MYSQL_DB || process.env.MYSQLDATABASE
+      }
+    });
+  }
+});
+
 
 app.use("/oauth", oauthRoutes);
 app.use("/external", externalRoutes);
