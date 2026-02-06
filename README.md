@@ -2,6 +2,8 @@
 
 A Node.js/Express backend API for FarmLokal, a platform connecting local farmers with consumers. Features OAuth authentication, product management with pagination, caching via Redis, and rate limiting.
 
+### Hosted backend: https://farmlokal-backend-p1e6.onrender.com/
+Hosted Frontend: https://farmlokal.netlify.app/
 ## Tech Stack
 
 - **Runtime**: Node.js 22
